@@ -1,0 +1,30 @@
+version: '3'
+services:
+  app:
+    image: 'onesysadmin/grails:2.3'
+    command: ['./wrapper-grails.sh', 'grails', 'run-app']
+    depends_on:
+      - psql
+      - cas
+    ports:
+      - '8080:8080'
+    volumes:
+      - '.:/app'
+  pg:
+    image: 'postgres:9.6'
+  cas:
+    image: 'apereo/cas'
+    command: /cas-overlay/bin/run-cas.sh # leading slash is missing from default command as per comment from 'delfer' @ https://hub.docker.com/r/apereo/cas/
+  psql:
+    image: 'governmentpaas/psql'
+    command: >
+      /bin/sh -c '
+        until psql -h "pg" -U "postgres" -c "\q";
+          do >&2 echo "Postgres is unavailable - sleeping";
+          sleep 1;
+        done && >&2 
+        echo "Postgres is ready - creating database" &&
+        psql -h pg -U postgres -c "CREATE DATABASE \"ala-images\";"
+      '
+    depends_on:
+      - pg
